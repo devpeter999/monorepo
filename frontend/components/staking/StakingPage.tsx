@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Badge } from "../ui/badge";
-import { Loader2, Wallet, Coins, AlertCircle, ArrowRightLeft } from "lucide-react";
+import { Loader2, Wallet, Coins, AlertCircle, DollarSign } from "lucide-react";
+import { NgnStakingFlow } from "./ngn-flow/NgnStakingFlow";
+import { getQuote, type Quote, type StakingPosition as NgnStakingPosition } from "@/lib/ngnStakingApi";
 
 type StakingMode = "ngn_deposit" | "ngn_balance" | "usdc";
 
@@ -22,6 +23,13 @@ export default function StakingPage() {
   const [status, setStatus] = useState("");
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [isStaking, setIsStaking] = useState(false);
+  
+  // NGN Deposit flow state
+  const [ngnDepositAmount, setNgnDepositAmount] = useState("");
+  const [ngnQuote, setNgnQuote] = useState<Quote | null>(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [showNgnFlow, setShowNgnFlow] = useState(false);
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
@@ -216,6 +224,55 @@ export default function StakingPage() {
     }
   }
 
+  const handleNgnDepositInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    if (value === '' || !isNaN(Number(value))) {
+      setNgnDepositAmount(value);
+      setQuoteError(null);
+    }
+  }
+
+  const handleGetQuote = async () => {
+    const amount = Number(ngnDepositAmount);
+    if (!amount || amount < 100) {
+      setQuoteError("Minimum amount is ₦100");
+      return;
+    }
+
+    setIsLoadingQuote(true);
+    setQuoteError(null);
+
+    try {
+      const quote = await getQuote(amount);
+      setNgnQuote(quote);
+      setShowNgnFlow(true);
+    } catch (error) {
+      setQuoteError(error instanceof Error ? error.message : "Failed to get quote");
+    } finally {
+      setIsLoadingQuote(false);
+    }
+  }
+
+  const handleNgnFlowComplete = (position: NgnStakingPosition) => {
+    // Refresh staking position
+    getStakingPosition()
+      .then((data) => setStakingPosition(data))
+      .catch((err: Error) => {
+        console.error("Failed to refresh staking position", err);
+      });
+    
+    // Reset flow
+    setShowNgnFlow(false);
+    setNgnQuote(null);
+    setNgnDepositAmount("");
+    setStatus(`Successfully staked ${position.amount} USDC`);
+  }
+
+  const handleNgnFlowCancel = () => {
+    setShowNgnFlow(false);
+    setNgnQuote(null);
+  }
+
 
 
 
@@ -273,16 +330,79 @@ export default function StakingPage() {
 
       {/* Staking Mode Toggle */}
       <Tabs value={stakingMode} onValueChange={(v) => setStakingMode(v as StakingMode)} className="mb-6">
-        <TabsList className="grid w-full grid-cols-2 border-3 border-foreground">
+        <TabsList className="grid w-full grid-cols-3 border-3 border-foreground">
+          <TabsTrigger value="ngn_deposit" className="data-[state=active]:bg-primary">
+            <DollarSign className="h-4 w-4 mr-2" />
+            NGN Deposit
+          </TabsTrigger>
           <TabsTrigger value="ngn_balance" className="data-[state=active]:bg-primary">
             <Wallet className="h-4 w-4 mr-2" />
-            Stake with NGN Balance
+            NGN Balance
           </TabsTrigger>
           <TabsTrigger value="usdc" className="data-[state=active]:bg-primary">
             <Coins className="h-4 w-4 mr-2" />
-            Stake USDC (Advanced)
+            USDC (Advanced)
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="ngn_deposit" className="mt-4">
+          {showNgnFlow && ngnQuote ? (
+            <NgnStakingFlow
+              initialQuote={ngnQuote}
+              onComplete={handleNgnFlowComplete}
+              onCancel={handleNgnFlowCancel}
+            />
+          ) : (
+            <Card className="border-3 border-foreground shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+              <CardHeader>
+                <CardTitle>Stake with NGN Deposit</CardTitle>
+                <CardDescription>
+                  Deposit NGN via bank transfer or Paystack, convert to USDC, and stake
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ngn-deposit-amount">Amount (NGN)</Label>
+                  <Input
+                    id="ngn-deposit-amount"
+                    type="number"
+                    placeholder="Enter amount in NGN"
+                    value={ngnDepositAmount}
+                    onChange={handleNgnDepositInput}
+                    min={100}
+                    className="border-2 border-foreground"
+                    disabled={isLoadingQuote}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Minimum: ₦100
+                  </p>
+                </div>
+
+                {quoteError && (
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{quoteError}</span>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleGetQuote}
+                  disabled={isLoadingQuote || !ngnDepositAmount || Number(ngnDepositAmount) < 100}
+                  className="w-full border-3 border-foreground bg-primary font-bold shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] disabled:opacity-50"
+                >
+                  {isLoadingQuote ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Getting Quote...
+                    </>
+                  ) : (
+                    "Get Quote"
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         <TabsContent value="ngn_balance" className="mt-4">
           <Card className="border-3 border-foreground shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
