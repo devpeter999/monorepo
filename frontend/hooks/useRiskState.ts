@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getRiskState } from "@/lib/risk";
 
 interface UseRiskStateResult {
   isFrozen: boolean;
   freezeReason: string | null;
   isLoading: boolean;
-  clearFreeze: () => void;
+  refresh: () => Promise<void>;
 }
 
 export function useRiskState(): UseRiskStateResult {
   const [isFrozen, setIsFrozen] = useState(false);
   const [freezeReason, setFreezeReason] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const risk = await getRiskState();
+    setIsFrozen(risk.isFrozen);
+    setFreezeReason(risk.freezeReason ?? null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -23,14 +29,11 @@ export function useRiskState(): UseRiskStateResult {
         const risk = await getRiskState();
         if (!cancelled) {
           setIsFrozen(risk.isFrozen);
-         setFreezeReason(risk.freezeReason || "Account restricted due to negative balance");
+          setFreezeReason(risk.freezeReason ?? null);
         }
-      }
-      catch (e) {
-        console.error(e)
-      }
-
-      finally {
+      } catch (error) {
+        console.error("Failed to fetch risk state", error);
+      } finally {
         if (!cancelled) {
           setIsLoading(false);
         }
@@ -44,10 +47,5 @@ export function useRiskState(): UseRiskStateResult {
     };
   }, []);
 
-  function clearFreeze() {
-    setIsFrozen(false);
-    setFreezeReason(null);
-  }
-
-  return { isFrozen, freezeReason, isLoading, clearFreeze };
+  return { isFrozen, freezeReason, isLoading, refresh };
 }

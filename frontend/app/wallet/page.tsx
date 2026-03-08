@@ -80,7 +80,7 @@ export default function WalletPage() {
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(0);
 
-  const { isFrozen, freezeReason, clearFreeze } = useRiskState();
+  const { isFrozen, freezeReason } = useRiskState();
 
   const deficit =
     balanceState.type === "success"
@@ -162,6 +162,17 @@ export default function WalletPage() {
             </Button>
           </div>
         </div>
+
+        {isFrozen && (
+          <div className="mb-6">
+            <FrozenAccountBanner
+              deficit={deficit}
+              freezeReason={freezeReason}
+              ctaHref="/wallet"
+              ctaLabel="Top up wallet"
+            />
+          </div>
+        )}
 
         <section className="grid gap-4 md:grid-cols-3">
           <Card className="border-3 border-foreground shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
@@ -469,14 +480,6 @@ export default function WalletPage() {
           setTopUpModalOpen(true);
         }}
       />
-
-        {isFrozen && (
-        <FrozenAccountBanner
-        deficit={deficit}
-        onClose={clearFreeze}
-        freezeReason={freezeReason}
-        />
-       )}
     </main>
   );
 }

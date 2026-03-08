@@ -19,7 +19,7 @@ type StakingMode = "ngn_balance" | "usdc";
 
 export default function StakingPage() {
   const { toast } = useToast();
-  const { isFrozen, freezeReason, clearFreeze } = useRiskState();
+  const { isFrozen, freezeReason } = useRiskState();
   const [stakingPosition, setStakingPosition] = useState<StakingPositionReponse | null>(null);
   const [ngnBalance, setNgnBalance] = useState<NgnBalanceResponse | null>(null);
   const [stakingMode, setStakingMode] = useState<StakingMode>("ngn_balance");
@@ -253,15 +253,7 @@ export default function StakingPage() {
   };
 
 
-  if (isFrozen) {
-    return (
-      <FrozenAccountBanner
-        freezeReason={freezeReason}
-        deficit={400000}
-        onClose={clearFreeze}
-      />
-    )
-  }
+  const deficit = ngnBalance ? Math.max(0, -ngnBalance.totalNgn) : 0;
 
   return (
     <div className="max-w-4xl mx-auto p-6 relative ">
@@ -271,6 +263,17 @@ export default function StakingPage() {
           Stake your tokens to earn rewards
         </p>
       </div>
+
+      {isFrozen && (
+        <div className="mb-6">
+          <FrozenAccountBanner
+            freezeReason={freezeReason}
+            deficit={deficit}
+            ctaHref="/wallet"
+            ctaLabel="Top up NGN wallet to repay deficit"
+          />
+        </div>
+      )}
 
       {/* Staking Position Cards */}
       <div className="grid gap-4 md:grid-cols-2 mb-6">
@@ -333,7 +336,7 @@ export default function StakingPage() {
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4">
                   <p className="font-semibold text-destructive">{ACCOUNT_FROZEN_MESSAGE}</p>
                   <p className="mt-1 text-sm text-destructive">
-                    Top up NGN wallet to repay deficit.
+                    Top up NGN wallet to repay deficit
                   </p>
                   <Button asChild className="mt-3 border-2 border-foreground bg-primary font-bold">
                     <Link href="/wallet">Go to wallet</Link>
