@@ -1,6 +1,7 @@
 ## Summary
 
-Briefly describe the change. This section is required for CI PR validation.
+Briefly describe the change.
+
 If this is a contract upgrade, include:
 
 - Which contract is being upgraded
@@ -13,11 +14,7 @@ Example: `Closes #123`
 
 ## Changes
 
-This section is required for CI PR validation.
-
 ## Contract Upgrade Details (if applicable)
-
-This section is required for CI PR validation if this is a contract upgrade.
 
 ### Network
 
@@ -46,15 +43,11 @@ This section is required for CI PR validation if this is a contract upgrade.
 
 ## How to test
 
-This section is required for CI PR validation.
-
 - [ ] All automated tests pass
 - [ ] Integration tests pass (if applicable)
 - [ ] Manual testing completed (describe what you tested)
 
 ## Security Considerations
-
-This section is required for CI PR validation.
 
 - [ ] No secrets or sensitive data are logged
 - [ ] No changes to authentication/authorization logic without review
@@ -65,8 +58,6 @@ This section is required for CI PR validation.
 Include before/after screenshots for any UI changes. For new features, show different states (loading, error, success). For responsive changes, include mobile/tablet/desktop views.
 
 ## Checklist
-
-This section is required for CI PR validation.
 
 - [ ] I linked an issue (or explained why one is not needed)
 - [ ] I tested locally

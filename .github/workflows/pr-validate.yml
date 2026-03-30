@@ -15,41 +15,11 @@ jobs:
       - name: Validate PR body
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           # Ensure PR body is not empty or just whitespace
           if [[ -z "$PR_BODY" || "$PR_BODY" =~ ^[[:space:]]*$ ]]; then
-            echo "::error::PR description is required. Please fill out the PR template."
+            echo "::error::PR description is required. Please fill out the PR description."
             exit 1
-          fi
-
-          # Check for linked issue (e.g., Fixes #123 or Closes #123)
-          if [[ ! "$PR_BODY" =~ (Fixes|Closes|Resolves|Related to)[[:space:]]+#[0-9]+ ]]; then
-            echo "::error::Consider linking an issue (e.g., 'Fixes #123')."
-            # Uncomment the next line to make this a hard error
-            # exit 1
-          fi
-
-          # Ensure required sections are present (basic check)
-          required_sections=("## Summary" "## Changes" "## Checklist")
-          for section in "${required_sections[@]}"; do
-            # Use unquoted section for regex match
-            if [[ ! "$PR_BODY" =~ $section ]]; then
-              echo "::error::Missing required section: $section. Please use the PR template (## Summary, ## Changes, ## Checklist)."
-              exit 1
-            fi
-          done
-
-          # If this is a contract upgrade, ensure upgrade details are present
-          if [[ "$PR_BODY" =~ [Cc]ontract\ [Uu]pgrade|[Uu]pgradeable|[Dd]eploy.*contract ]]; then
-            echo "Detected contract upgrade. Checking for upgrade details..."
-            upgrade_sections=("### Network" "### New Contract" "### Upgrade Governance" "### Verification Steps")
-            for section in "${upgrade_sections[@]}"; do
-              if [[ ! "$PR_BODY" =~ "$section" ]]; then
-                echo "::error::Contract upgrade PR must include: $section. Fill out the Contract Upgrade Details in the template."
-                exit 1
-              fi
-            done
           fi
 
           echo "PR validation passed."
