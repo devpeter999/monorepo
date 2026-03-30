@@ -1,0 +1,33 @@
+﻿cargo :     Updating 
+crates.io index
+At line:1 char:1
++ cargo check -p 
+rent_wallet 2>&1 | 
+Out-File -FilePath 
+c:\Users\USER\mo ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (    Updati   
+ ng crates.io inde    
+x:String) [], Rem    
+oteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+error: failed to 
+select a version for 
+the requirement `kani 
+= "^0.45"`
+candidate versions 
+found which didn't 
+match: 0.0.1, 0.0.0
+location searched: 
+crates.io index
+required by package 
+`rent_wallet v0.1.0 (C
+:\Users\USER\monorepo\
+contracts\rent_wallet)
+`
