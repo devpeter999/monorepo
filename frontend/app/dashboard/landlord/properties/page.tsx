@@ -18,7 +18,12 @@ import {
   Eye,
   Clock,
   Search,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { useEffect } from "react";
+import { landlordApi, type LandlordProperty } from "@/lib/landlordApi";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,11 +33,31 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { landlordProperties as myProperties } from "@/lib/mockData";
+import { Progress } from "@/components/ui/progress";
+import { VerificationBadge } from "@/components/properties/verification-badge";
 
 export default function LandlordPropertiesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [myProperties, setMyProperties] = useState<LandlordProperty[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        const data = await landlordApi.getProperties();
+        setMyProperties(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load properties");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
 
   const filteredProperties = myProperties.filter((property) => {
     const matchesSearch =
@@ -136,9 +161,31 @@ export default function LandlordPropertiesPage() {
             </div>
           </div>
 
+          {/* Error State */}
+          {error && (
+            <div className="mb-8 border-3 border-destructive bg-destructive/10 p-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+              <div className="flex items-center gap-3 text-destructive">
+                <AlertCircle className="h-6 w-6" />
+                <p className="font-bold">{error}</p>
+              </div>
+              <Button 
+                onClick={() => window.location.reload()}
+                className="mt-4 border-2 border-destructive bg-transparent font-bold text-destructive hover:bg-destructive hover:text-white"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
           {/* Properties Grid */}
           <div className="grid gap-6">
-            {filteredProperties.length === 0 ? (
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="border-3 border-foreground p-0 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+                  <div className="flex h-48 animate-pulse bg-muted/50" />
+                </Card>
+              ))
+            ) : filteredProperties.length === 0 ? (
               <Card className="border-3 border-foreground p-12 text-center shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
                 <Building2 className="mx-auto h-16 w-16 text-muted-foreground" />
                 <h3 className="mt-4 text-xl font-bold">No Properties Found</h3>
@@ -228,7 +275,21 @@ export default function LandlordPropertiesPage() {
                         <span className="flex items-center gap-1 text-sm font-medium">
                           <Square className="h-4 w-4" /> {property.sqm} sqm
                         </span>
+                        <VerificationBadge status={property.verificationStatus as any} />
                       </div>
+
+                      {property.verificationStatus === "PENDING" && (
+                        <div className="mb-4 border-3 border-foreground bg-accent/10 p-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wider">
+                            <span>Verification Progress</span>
+                            <span>65%</span>
+                          </div>
+                          <Progress value={65} className="h-3 border-2 border-foreground bg-background rounded-none" />
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Our agents are currently reviewing your documents and property photos.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center gap-6">
